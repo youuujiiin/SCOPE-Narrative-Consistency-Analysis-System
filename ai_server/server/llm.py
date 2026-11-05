@@ -45,22 +45,48 @@ def _sync_client():
 
 
 def call_sync(user_text: str, system_prompt: str) -> str:
-    """scope_ai 의 llm_callable 규격 (user, system) -> text."""
+    """scope_ai 의 llm_callable 규격 (user, system) -> text.
+
+    Claude 응답을 스트리밍으로 수신한 후 완성된 텍스트를 반환한다.
+    """
     try:
-        resp = _sync_client().messages.create(
-        model=MODEL_NAME,
-        max_tokens=MAX_TOKENS,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_text}],
-        )
+        with _sync_client().messages.stream(
+            model=MODEL_NAME,
+            max_tokens=MAX_TOKENS,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_text}],
+        ) as stream:
+            resp = stream.get_final_message()
+
     except Exception as exc:
         if getattr(exc, "status_code", None) == 401:
-            raise HTTPException(401, "Claude API 인증 실패(401). ai_server/.env의 ANTHROPIC_API_KEY를 확인하세요.") from exc
+            raise HTTPException(
+                401,
+                "Claude API 인증 실패(401). ai_server/.env의 "
+                "ANTHROPIC_API_KEY를 확인하세요."
+            ) from exc
         raise
+
+    logger.info(
+        "Claude 응답 완료: model=%s input_tokens=%s "
+        "output_tokens=%s stop_reason=%s",
+        resp.model,
+        resp.usage.input_tokens,
+        resp.usage.output_tokens,
+        resp.stop_reason,
+    )
+
     if resp.stop_reason == "max_tokens":
-        # JSON 이 중간에 잘렸다는 뜻 — 곧 파싱 실패로 이어진다. 원인을 남긴다.
-        logger.warning("응답이 max_tokens(%d)에서 잘림 — ANTHROPIC_MAX_TOKENS 를 올릴 것", MAX_TOKENS)
-    return "\n".join(b.text for b in resp.content if b.type == "text")
+        logger.warning(
+            "응답이 max_tokens(%d)에서 잘림",
+            MAX_TOKENS,
+        )
+
+    return "\n".join(
+        block.text
+        for block in resp.content
+        if block.type == "text"
+    )
 
 
 async def ping() -> dict:

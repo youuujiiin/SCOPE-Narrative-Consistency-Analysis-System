@@ -76,7 +76,7 @@ class RemotePipeline:
         *,
         chapter_no: int | None = None,
     ) -> ExtractionOutput:
-        async with httpx.AsyncClient(timeout=300) as client:
+        async with httpx.AsyncClient(timeout=900) as client:
             resp = await client.post(
                 f"{self.base_url}/extract",
                 json={
