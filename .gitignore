@@ -1,0 +1,91 @@
+# ══════════════════════════════════════════════════════════
+#  Backend (Python / FastAPI)
+# ══════════════════════════════════════════════════════════
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# 가상환경
+.scope/
+.venv/
+venv/
+env/
+
+# 런타임 데이터
+uploads/
+
+# DB 백업 덤프
+backups/
+
+# 테스트/도구 캐시
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ══════════════════════════════════════════════════════════
+#  Frontend (Node / Firebase)
+# ══════════════════════════════════════════════════════════
+node_modules/
+.firebase/
+firebase-debug.log*
+firebase-debug.*.log*
+.dataconnect
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+coverage
+.nyc_output
+
+# ══════════════════════════════════════════════════════════
+#  AI Server / Research
+# ══════════════════════════════════════════════════════════
+# AI 서버 실행 데이터 및 백업
+/ai_server/Data/
+
+# 연구 과정에서 생성된 데이터셋
+/research/ers_all_pairs_standalone/story/
+
+# ══════════════════════════════════════════════════════════
+#  공통
+# ══════════════════════════════════════════════════════════
+# 환경설정: 실제 비밀값 포함 파일 제외
+.env
+.env.*
+!.env.example
+
+# 로그
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 런타임
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 임시 파일
+*.tmp
+*.bak
+
+# Markdown 문서 (README 포함, 추후 직접 작성)
+*.md
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 호스트 보안 점검 보고서
+# (전체 Markdown 제외 규칙과 중복되지만 보안 목적 명시)
+docs/host_exposure_audit_*.md
