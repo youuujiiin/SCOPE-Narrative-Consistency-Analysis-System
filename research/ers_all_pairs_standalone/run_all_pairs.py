@@ -40,6 +40,7 @@ def main():
         raise ValueError(f'Missing embeddings for {len(missing)} event(s): {missing[:10]}')
     by_time={e['time_id']:e for e in ep['times'] if e.get('time_id')}
     by_location={e['location_id']:e for e in ep['locations'] if e.get('location_id')}
+    same_place_candidates = ep.get('same_place_candidates', [])
     n=len(events)
     results={event_id:[] for event_id in ids}
     # Original formulas are symmetric. Calculate each unordered pair once,
@@ -54,7 +55,12 @@ def main():
                 causal=causal_feature(aemb,bemb),
                 participant=participant_feature(a,b),
                 time=time_feature(by_time.get(a.get('time_id')),by_time.get(b.get('time_id'))),
-                location=location_feature(by_location.get(a.get('location_id')),by_location.get(b.get('location_id'))),
+                location=location_feature(
+                    by_location.get(a.get('location_id')),
+                    by_location.get(b.get('location_id')),
+                    locations=by_location,
+                    same_place_candidates=same_place_candidates,
+                ),
             )
             results[a_id].append({'event_id':b_id,**score})
             results[b_id].append({'event_id':a_id,**score})
@@ -63,7 +69,7 @@ def main():
         'event_count':n,
         'pair_count':n*(n-1),
         'self_comparisons_excluded':True,
-        'formula':'Original Scope AI ERS (features.py / calculator.py / math_utils.py)',
+        'formula':'Current Scope AI ERS (features.py / calculator.py / math_utils.py)',
         'events':[{'source_event_id':event_id,'comparisons':results[event_id]} for event_id in ids],
     }
     dest=args.output or story/'ers'/'ers_all_pairs.json'
