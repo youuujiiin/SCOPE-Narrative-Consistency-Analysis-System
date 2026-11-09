@@ -26,7 +26,10 @@ def save_json(data: Any, path: str | Path) -> Path:
 def save_text(text: str, path: str | Path) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+
+    with path.open("w", encoding="utf-8", newline="") as f:
+        f.write(text)
+
     return path
 
 
@@ -34,4 +37,6 @@ def load_text(path: str | Path) -> str:
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"텍스트 파일을 찾을 수 없습니다: {path}")
-    return path.read_text(encoding="utf-8")
+
+    with path.open("r", encoding="utf-8", newline="") as f:
+        return f.read()

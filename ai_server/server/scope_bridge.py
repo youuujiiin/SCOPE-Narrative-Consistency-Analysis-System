@@ -340,15 +340,34 @@ def _extract_sync(story_id: str, n: int, text: str, title: str | None) -> dict:
 
 
 def _ensure_extracted(story_id: str, n: int, text: str, title: str | None) -> None:
-    """검수 전에 회차 n 의 추출 상태가 원문과 맞게 있는지 확인하고, 없으면 채운다."""
+    """검수 전에 회차 n의 추출 상태가 원문과 맞는지 확인한다."""
     paths = _paths(story_id)
-    saved_text = paths.submission(n).read_text(encoding="utf-8") if paths.submission(n).exists() else None
-    if not paths.ep(n).exists() or saved_text != text:
-        # 서버 데이터를 지웠거나, echo 로 추출했거나, 추출 뒤 원문이 바뀐 경우. LLM 1회 추가.
-        logger.warning("[review] story=%s ch=%d 추출 상태가 없거나 원문이 달라 지금 추출함", story_id, n)
+
+    saved_text = (
+        paths.submission(n).read_text(encoding="utf-8")
+        if paths.submission(n).exists()
+        else None
+    )
+
+    def normalize_newlines(value: str) -> str:
+        return value.replace("\r\n", "\n").replace("\r", "\n")
+
+    if (
+        not paths.ep(n).exists()
+        or saved_text is None
+        or normalize_newlines(saved_text) != normalize_newlines(text)
+    ):
+        logger.warning(
+            "[review] story=%s ch=%d 추출 상태가 없거나 원문이 달라 지금 추출함",
+            story_id, n,
+        )
         _extract_sync(story_id, n, text, title)
+
     elif not _is_merged(paths, n):
-        logger.warning("[review] story=%s ch=%d ep 는 있으나 ep_global 미반영 — 다시 병합", story_id, n)
+        logger.warning(
+            "[review] story=%s ch=%d ep 는 있으나 ep_global 미반영 — 다시 병합",
+            story_id, n,
+        )
         process_ep(story_id, n, data_root=DATA_ROOT)
 
 
@@ -461,9 +480,20 @@ def _review_sync(story_id: str, n: int, text: str, title: str | None, delta: dic
         elif state.get("status") != "confirmed":
             raise HTTPException(409, "현재 회차를 검수할 수 없는 상태입니다.")
     filled = _ensure_embeddings(paths)
-    if filled:
-        rank_related_events(story_id, n, top_k=ERS_TOP_K, data_root=DATA_ROOT)
-    ranked = load_json(paths.ers_result(n))
+    ers_path = paths.ers_result(n)
+
+    if filled or not ers_path.exists():
+        logger.info(
+            "[review] story=%s ch=%d ERS 결과 생성 또는 갱신",
+            story_id, n,
+        )
+    rank_related_events(
+            story_id,
+            n,
+            top_k=ERS_TOP_K,
+            data_root=DATA_ROOT,
+        )
+    ranked = load_json(ers_path)
     if not ranked.get("events"):
         return []
     if state.get("status") == "reviewed":
